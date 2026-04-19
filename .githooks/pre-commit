@@ -1,0 +1,21 @@
+#!/bin/bash
+# pre-commit hook: 在提交前自动运行 cargo fmt
+
+set -e
+
+echo "Running cargo fmt..."
+
+# 检查是否有需要格式化的 Rust 文件
+if ! cargo fmt -- --check 2>/dev/null; then
+    echo ""
+    echo "Code formatting issues found. Running 'cargo fmt' to fix..."
+    cargo fmt
+    echo ""
+    echo "Formatting completed. Please review the changes and re-add the files:"
+    echo "  git add <files>"
+    echo "  git commit"
+    exit 1
+fi
+
+echo "Code formatting OK."
+exit 0

@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64 (glibc)
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          # Linux x86_64 (musl - static)
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            archive: tar.gz
+          # macOS ARM64 (native build)
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          # macOS x86_64 (cross-compile from ARM64)
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          # Windows x86_64
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools (musl)
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package (Unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/suanpan dist/suanpan
+          cp README.md LICENSE dist/
+          cd dist
+          tar czf suanpan-${{ github.ref_name }}-${{ matrix.target }}.tar.gz suanpan README.md LICENSE
+          echo "ASSET=suanpan-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" >> $GITHUB_ENV
+
+      - name: Package (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item target/${{ matrix.target }}/release/suanpan.exe dist/suanpan.exe
+          Copy-Item README.md dist/
+          Copy-Item LICENSE dist/
+          cd dist
+          Compress-Archive -Path suanpan.exe,README.md,LICENSE -DestinationPath suanpan-${{ github.ref_name }}-${{ matrix.target }}.zip
+          echo "ASSET=suanpan-${{ github.ref_name }}-${{ matrix.target }}.zip" >> $env:GITHUB_ENV
+
+      - name: Calculate checksum (Unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          cd dist
+          sha256sum ${{ env.ASSET }} > ${{ env.ASSET }}.sha256
+
+      - name: Calculate checksum (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          cd dist
+          Get-FileHash -Algorithm SHA256 ${{ env.ASSET }} | Select-Object -ExpandProperty Hash | Out-File -Encoding UTF8 ${{ env.ASSET }}.sha256
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: suanpan-${{ matrix.target }}
+          path: dist/*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          pattern: suanpan-*
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la artifacts/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
