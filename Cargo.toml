@@ -9,7 +9,7 @@ repository = "https://github.com/yinguobing/qweather-skill"
 
 [dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-reqwest = { version = "0.12", features = ["json", "gzip", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "gzip", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 clap = { version = "4", features = ["derive"] }
