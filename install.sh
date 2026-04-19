@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="yinguobing/qweather-skill"
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 # Detect OS and architecture
 detect_target() {
@@ -63,12 +63,21 @@ main() {
     tar -xzf "$tmpdir/$asset" -C "$tmpdir"
 
     echo "==> Installing to $INSTALL_DIR..."
-    if [ -w "$INSTALL_DIR" ]; then
-        mv "$tmpdir/qweather" "$INSTALL_DIR/qweather"
-    else
-        echo "    Requesting sudo permission..."
-        sudo mv "$tmpdir/qweather" "$INSTALL_DIR/qweather"
-    fi
+    mkdir -p "$INSTALL_DIR"
+    mv "$tmpdir/qweather" "$INSTALL_DIR/qweather"
+
+    # Warn if install dir is not in PATH
+    case ":$PATH:" in
+        *":$INSTALL_DIR:"*) ;;
+        *)
+            echo ""
+            echo "⚠️  Warning: $INSTALL_DIR is not in your PATH."
+            echo "    Add the following line to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+            echo ""
+            echo "    export PATH=\"$INSTALL_DIR:\$PATH\""
+            echo ""
+            ;;
+    esac
 
     echo "==> Done. Installed:"
     "$INSTALL_DIR/qweather" --version || true
