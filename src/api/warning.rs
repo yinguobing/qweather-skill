@@ -13,15 +13,13 @@ impl<'a> WarningAPI<'a> {
         WarningAPI { client }
     }
 
-    pub async fn now(
-        &self,
-        location: &str,
-        lang: &str,
-    ) -> Result<WarningResponse, QWeatherError> {
+    pub async fn now(&self, location: &str, lang: &str) -> Result<WarningResponse, QWeatherError> {
         let mut params: HashMap<&str, String> = HashMap::new();
         params.insert("location", location.to_string());
         params.insert("lang", lang.to_string());
         let url = format!("{}/warning/now", self.client.config.base_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 }

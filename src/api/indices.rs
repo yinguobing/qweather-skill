@@ -25,6 +25,8 @@ impl<'a> IndicesAPI<'a> {
         params.insert("type", r#type.to_string());
         params.insert("lang", lang.to_string());
         let url = format!("{}/indices/{}", self.client.config.base_url, days);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 }

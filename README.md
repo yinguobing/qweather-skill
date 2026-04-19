@@ -6,133 +6,126 @@
 
 基于 [和风天气 API](https://dev.qweather.com/)，提供以下能力：
 
-- **城市定位**：城市搜索、热门城市、POI 搜索
-- **天气预报**：实时天气、每日预报、逐小时预报
-- **格点天气**：基于经纬度的高分辨率（3-5 公里）天气数据
-- **空气质量**：实时空气质量、小时/每日预报、监测站数据
-- **生活指数**：穿衣、洗车、运动、紫外线等指数预报
-- **分钟级降水**：未来 2 小时每 5 分钟降水预报（中国地区）
-- **天气预警**：台风、暴雨、高温等实时预警信息
-- **天文数据**：日出日落、月升月落、月相、太阳高度角
+- 城市定位：城市搜索、热门城市、POI 搜索
+- 天气预报：实时天气、每日预报、逐小时预报
+- 格点天气：基于经纬度的高分辨率（3~5公里）天气数据
+- 空气质量：实时空气质量、小时/每日预报、监测站数据
+- 生活指数：穿衣、洗车、运动、紫外线等指数预报
+- 分钟级降水：未来2小时每5分钟降水预报（中国地区）
+- 天气预警：台风、暴雨、高温等实时预警信息
+- 天文数据：日出日落、月升月落、月相、太阳高度角
 
 ## 安装
 
-### 从源码构建
-
+使用curl + install.sh安装：
 ```bash
-git clone https://github.com/yinguobing/qweather-skill.git
-cd qweather-skill
-cargo build --release
+curl -sSL https://raw.githubusercontent.com/yinguobing/qweather-skill/main/install.sh | bash
 ```
 
-构建产物位于 `target/release/qweather`。
+使用Cargo安装可执行文件：
+```bash
+cargo install qweather
+```
+
+
+源码安装
+```bash
+cargo install --git https://github.com/yinguobing/qweather-skill.git
+```
 
 ## 身份认证
 
-使用 JWT 身份认证，**必须**配置以下环境变量：
+使用JWT身份认证方式。可以通过环境变量或者CLI参数的方式设置：
 
+环境变量
 ```bash
-export QWEATHER_KID="your_kid"
-export QWEATHER_PROJECT_ID="your_project_id"
-export QWEATHER_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+export QWEATHER_KID="YOUR_KID"
+export QWEATHER_PROJECT_ID="YOUR_PROJECT_ID"
+export QWEATHER_PRIVATE_KEY="/path/to/qweather/private.pem"
 export QWEATHER_BASE_URL="https://your-host.qweatherapi.com/v7"
 export QWEATHER_GEO_URL="https://your-host.qweatherapi.com/geo/v2"
 ```
 
-详情可在[和风天气控制台](https://console.qweather.com/project)获取。
-
-## 快速开始
-
-### CLI 命令行工具
-
+CLI参数，会覆盖环境变量。
 ```bash
-# 通过参数传入 JWT 凭据（必须同时指定自定义 API Host）
-qweather 北京 \
-  --kid YOUR_KID \
+qweather --kid YOUR_KID \
   --project-id YOUR_PROJECT_ID \
-  --private-key ./ed25519-private.pem \
-  --base-url https://your-host.qweatherapi.com/v7 \
-  --geo-url https://your-host.qweatherapi.com/geo/v2
-
-# 私钥也可以直接传 PEM 内容
-qweather 北京 \
-  --kid YOUR_KID \
-  --project-id YOUR_PROJECT_ID \
-  --private-key "-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIE..." \
-  --base-url https://your-host.qweatherapi.com/v7 \
-  --geo-url https://your-host.qweatherapi.com/geo/v2
+  --private-key /path/to/qweather/private.pem \
+  --base-url "https://<YOUR_HOST>.qweatherapi.com/v7" \
+  --geo-url "https://<YOUR_HOST>.qweatherapi.com/geo/v2"
 ```
 
-#### 更多查询类型
+详情可在[和风天气控制台](https://console.qweather.com/project)获取。
+
+## CLI 使用
+
+全局入口为 `qweather`。所有查询都会自动完成城市定位。
+
+### 常用查询
 
 ```bash
-# 逐小时预报
+# 实时天气（默认）
+qweather 北京
+
+# 未来N天预报（daily 仅支持 3,7,10,15,30）
+qweather 北京 --type daily --days 3
+
+# 逐小时预报（hourly 仅支持 24,72,168）
 qweather 北京 --type hourly --hours 24
 
-# 空气质量
+# 空气质量实时数据
 qweather 北京 --type air
 
 # 生活指数
-qweather 北京 --type indices
-
-# 分钟级降水
-qweather 北京 --type minutely
+qweather 北京 --type indices --index-days 1d
 
 # 天气预警
 qweather 北京 --type warning
 
-# 日出日落
-qweather 北京 --type sun --date 20260201
+# 分钟级降水（仅中国地区，自动获取经纬度）
+qweather 北京 --type minutely
 
-# 格点实时天气（基于经纬度）
+# 日出日落（--date 必选，格式 yyyyMMdd，最多未来 60 天）
+qweather 北京 --type sun --date 20260416
+
+# 月升月落和月相（--date 必选，格式 yyyyMMdd，最多未来 60 天）
+qweather 北京 --type moon --date 20260416
+
+# 太阳高度角（--date 必选；--time 格式 HHmm；--tz 时区偏移如 0800；-alt 海拔高度米）
+qweather 北京 --type solar --date 20260416 --time 1200 --tz 0800 --alt 43
+
+# 格点天气（基于经纬度的高分辨率数据）
 qweather 北京 --type grid-now
+qweather 北京 --type grid-daily --days 3
+qweather 北京 --type grid-hourly --hours 24
 
-# 空气质量每日预报
+# 空气质量预报
 qweather 北京 --type air-daily --days 5
-
-# 月相
-qweather 北京 --type moon --date 20260201
-
-# 太阳高度角
-qweather 北京 --type solar --date 20260201 --time 1200 --tz 0800 --alt 43
+qweather 北京 --type air-hourly --hours 72
 ```
 
-## API 模块一览
+### 命令行参数速查
 
-| 模块 | 说明 |
-|------|------|
-| `geo` | 城市搜索、热门城市、POI 搜索 |
-| `weather` | 实时天气、每日/逐小时预报 |
-| `grid_weather` | 格点实时/每日/逐小时天气 |
-| `air` | 实时空气质量、预报、监测站（支持 v7 / v1） |
-| `indices` | 天气生活指数预报 |
-| `minutely` | 分钟级降水预报 |
-| `warning` | 实时天气预警 |
-| `astronomy` | 日出日落、月相、太阳高度角 |
+- `--type {now,daily,hourly,air,indices,minutely,warning,sun,moon,solar,grid-now,grid-daily,grid-hourly,air-daily,air-hourly}`
+- `--days N`：用于 daily / grid-daily / air-daily
+- `--hours N`：用于 hourly / grid-hourly / air-hourly
+- `--index-days {1d,3d}`：用于 indices
+- `--date yyyyMMdd`：用于 sun / moon / solar（**最多未来 60 天，含今天**）
+- `--time HHmm` / `--tz 0800` / `--alt 海拔`：用于 solar
+- `--kid` / `--project-id` / `--private-key` / `--base-url` / `--geo-url`：覆盖环境变量
 
-## 运行测试
+### 参数限制
 
-```bash
-cargo test
-```
-
-## 项目结构
-
-```
-qweather-skill/
-├── Cargo.toml         # Rust 项目配置
-├── src/
-│   ├── main.rs        # CLI 入口
-│   ├── lib.rs         # 库入口
-│   ├── client.rs      # HTTP 客户端
-│   ├── config.rs      # 配置管理
-│   ├── error.rs       # 错误类型
-│   ├── models.rs      # 数据模型
-│   ├── api/           # API 封装
-│   └── cli/           # CLI 参数与格式化
-└── tests/             # 集成测试
-```
-
-## 许可证
-
-[MIT](LICENSE)
+| 参数 | 适用 `--type` | 限制说明 |
+|------|--------------|----------|
+| `--days` | `daily` | 仅支持 `3,7,10,15,30` |
+| `--days` | `grid-daily` | 仅支持 `3,7` |
+| `--days` | `air-daily` | 仅支持 `1,3,5` |
+| `--hours` | `hourly` | 仅支持 `24,72,168` |
+| `--hours` | `grid-hourly` | 仅支持 `24,72` |
+| `--hours` | `air-hourly` | 仅支持 `24,72` |
+| `--date` | `sun` / `moon` | 必选，格式 `yyyyMMdd`，**仅未来 60 天内（含今天）** |
+| `--date` | `solar` | 必选，格式 `yyyyMMdd` |
+| `--time` | `solar` | 必选，格式 `HHmm` |
+| `--tz` | `solar` | 必选，时区偏移，如 `0800`、`-0530` |
+| `--alt` | `solar` | 必选，海拔高度（米） |

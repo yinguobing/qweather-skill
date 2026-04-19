@@ -24,7 +24,9 @@ impl<'a> AstronomyAPI<'a> {
         params.insert("date", date.to_string());
         params.insert("lang", lang.to_string());
         let url = format!("{}/astronomy/sun", self.client.config.base_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn moon_phase(
@@ -38,7 +40,9 @@ impl<'a> AstronomyAPI<'a> {
         params.insert("date", date.to_string());
         params.insert("lang", lang.to_string());
         let url = format!("{}/astronomy/moon", self.client.config.base_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn solar_elevation_angle(
@@ -57,7 +61,12 @@ impl<'a> AstronomyAPI<'a> {
         params.insert("tz", tz.to_string());
         params.insert("alt", alt.to_string());
         params.insert("lang", lang.to_string());
-        let url = format!("{}/astronomy/solar-elevation-angle", self.client.config.base_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        let url = format!(
+            "{}/astronomy/solar-elevation-angle",
+            self.client.config.base_url
+        );
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 }

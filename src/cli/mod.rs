@@ -29,16 +29,33 @@ pub struct Args {
     #[arg(long, value_name = "TYPE", default_value = "now", help = "查询类型")]
     pub r#type: QueryType,
 
-    #[arg(long, default_value_t = 3, help = "预报天数（daily / grid-daily / air-daily）")]
+    #[arg(
+        long,
+        default_value_t = 3,
+        help = "预报天数（daily / grid-daily / air-daily）"
+    )]
     pub days: i32,
 
-    #[arg(long, default_value_t = 24, help = "预报小时数（hourly / grid-hourly / air-hourly）")]
+    #[arg(
+        long,
+        default_value_t = 24,
+        help = "预报小时数（hourly / grid-hourly / air-hourly）"
+    )]
     pub hours: i32,
 
-    #[arg(long, value_name = "INDEX_DAYS", default_value = "1d", help = "指数预报天数（indices）")]
+    #[arg(
+        long,
+        value_name = "INDEX_DAYS",
+        default_value = "1d",
+        help = "指数预报天数（indices）"
+    )]
     pub index_days: String,
 
-    #[arg(long, default_value = "", help = "查询日期 yyyyMMdd（sun / moon / solar）")]
+    #[arg(
+        long,
+        default_value = "",
+        help = "查询日期 yyyyMMdd（sun / moon / solar）"
+    )]
     pub date: String,
 
     #[arg(long, default_value = "", help = "查询时间 HHmm（solar）")]

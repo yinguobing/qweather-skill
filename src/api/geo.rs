@@ -32,7 +32,9 @@ impl<'a> GeoAPI<'a> {
             params.insert("range", range.to_string());
         }
         let url = format!("{}/city/lookup", self.client.config.geo_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn top_city(
@@ -46,7 +48,9 @@ impl<'a> GeoAPI<'a> {
         params.insert("number", number.to_string());
         params.insert("lang", lang.to_string());
         let url = format!("{}/city/top", self.client.config.geo_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn poi_lookup(
@@ -66,7 +70,9 @@ impl<'a> GeoAPI<'a> {
             params.insert("city", city.to_string());
         }
         let url = format!("{}/poi/lookup", self.client.config.geo_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn poi_range(
@@ -84,6 +90,8 @@ impl<'a> GeoAPI<'a> {
         params.insert("number", number.to_string());
         params.insert("lang", lang.to_string());
         let url = format!("{}/poi/range", self.client.config.geo_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 }

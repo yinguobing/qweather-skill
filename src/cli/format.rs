@@ -1,8 +1,9 @@
 use crate::api::air::{AirDailyResult, AirHourlyResult, AirNowResult};
 use crate::models::{
-    AstronomyMoonResponse, AstronomySunResponse, IndicesResponse, MinutelyResponse,
+    AstronomyMoonResponse, AstronomySunResponse, GridWeatherDailyResponse,
+    GridWeatherHourlyResponse, GridWeatherNowResponse, IndicesResponse, MinutelyResponse,
     SolarElevationAngleResponse, WarningResponse, WeatherDailyResponse, WeatherHourlyResponse,
-    WeatherNowResponse, GridWeatherNowResponse, GridWeatherDailyResponse, GridWeatherHourlyResponse,
+    WeatherNowResponse,
 };
 
 pub fn format_now(weather: &WeatherNowResponse) -> String {
@@ -100,8 +101,16 @@ pub fn format_air(air: &AirNowResult) -> String {
             if !a.pollutants.is_empty() {
                 lines.push("污染物浓度:".to_string());
                 for p in &a.pollutants {
-                    let val = p.concentration.get("value").and_then(|v| v.as_str()).unwrap_or("");
-                    let unit = p.concentration.get("unit").and_then(|v| v.as_str()).unwrap_or("");
+                    let val = p
+                        .concentration
+                        .get("value")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    let unit = p
+                        .concentration
+                        .get("unit")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
                     lines.push(format!("  {}: {} {}", p.name, val, unit));
                 }
             }
@@ -133,7 +142,10 @@ pub fn format_minutely(m: &MinutelyResponse) -> String {
         } else {
             &item.fxTime
         };
-        lines.push(format!("{}: 降水量 {}mm  ({})", time_str, item.precip, item.r#type));
+        lines.push(format!(
+            "{}: 降水量 {}mm  ({})",
+            time_str, item.precip, item.r#type
+        ));
     }
     lines.join("\n") + "\n"
 }
@@ -172,7 +184,11 @@ pub fn format_astronomy(a: &AstronomySunResponse) -> String {
 }
 
 pub fn format_moon(a: &AstronomyMoonResponse) -> String {
-    let moon_name = a.moonPhase.first().map(|m| m.name.as_str()).unwrap_or("无数据");
+    let moon_name = a
+        .moonPhase
+        .first()
+        .map(|m| m.name.as_str())
+        .unwrap_or("无数据");
     let illumination = a.moonPhase.first().and_then(|m| {
         if m.illumination.is_empty() {
             None
@@ -182,8 +198,22 @@ pub fn format_moon(a: &AstronomyMoonResponse) -> String {
     });
     let mut lines = vec![
         format!("[{}] 月升月落和月相", a.updateTime),
-        format!("月升: {}", if a.moonrise.is_empty() { "无" } else { &a.moonrise }),
-        format!("月落: {}", if a.moonset.is_empty() { "无" } else { &a.moonset }),
+        format!(
+            "月升: {}",
+            if a.moonrise.is_empty() {
+                "无"
+            } else {
+                &a.moonrise
+            }
+        ),
+        format!(
+            "月落: {}",
+            if a.moonset.is_empty() {
+                "无"
+            } else {
+                &a.moonset
+            }
+        ),
         format!("当前月相: {}", moon_name),
     ];
     if let Some(ill) = illumination {
@@ -231,7 +261,10 @@ pub fn format_air_daily(resp: &AirDailyResult) -> String {
                     .and_then(|i| i.primaryPollutant.get("name"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("-");
-                lines.push(format!("{}: AQI {} ({}), 首要污染物 {}", start, aqi, cat, pol));
+                lines.push(format!(
+                    "{}: AQI {} ({}), 首要污染物 {}",
+                    start, aqi, cat, pol
+                ));
             }
             lines.join("\n") + "\n"
         }
@@ -248,7 +281,10 @@ pub fn format_air_hourly(resp: &AirHourlyResult) -> String {
                 } else {
                     &hour.pubTime
                 };
-                lines.push(format!("{}: AQI {} ({})", time_str, hour.aqi, hour.category));
+                lines.push(format!(
+                    "{}: AQI {} ({})",
+                    time_str, hour.aqi, hour.category
+                ));
             }
             lines.join("\n") + "\n"
         }

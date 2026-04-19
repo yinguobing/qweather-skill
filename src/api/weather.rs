@@ -26,7 +26,9 @@ impl<'a> WeatherAPI<'a> {
             params.insert("unit", unit.to_string());
         }
         let url = format!("{}/weather/now", self.client.config.base_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn daily_forecast(
@@ -49,7 +51,9 @@ impl<'a> WeatherAPI<'a> {
             params.insert("unit", unit.to_string());
         }
         let url = format!("{}/weather/{}d", self.client.config.base_url, days);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn hourly_forecast(
@@ -72,6 +76,8 @@ impl<'a> WeatherAPI<'a> {
             params.insert("unit", unit.to_string());
         }
         let url = format!("{}/weather/{}h", self.client.config.base_url, hours);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 }

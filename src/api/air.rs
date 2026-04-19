@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::client::QWeatherClient;
 use crate::error::QWeatherError;
 use crate::models::{
-    AirDailyResponse, AirDailyV1Response, AirHourlyResponse, AirHourlyV1Response,
-    AirNowResponse, AirNowV1Response, AirStationResponse, AirStationV1Response,
+    AirDailyResponse, AirDailyV1Response, AirHourlyResponse, AirHourlyV1Response, AirNowResponse,
+    AirNowV1Response, AirStationResponse, AirStationV1Response,
 };
 
 pub enum AirNowResult {
@@ -37,7 +37,11 @@ impl<'a> AirAPI<'a> {
     }
 
     fn use_v1(&self) -> bool {
-        !self.client.config.base_url.starts_with("https://devapi.qweather.com")
+        !self
+            .client
+            .config
+            .base_url
+            .starts_with("https://devapi.qweather.com")
     }
 
     fn parse_coord(location: &str) -> Result<(f64, f64), QWeatherError> {

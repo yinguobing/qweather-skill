@@ -31,9 +31,18 @@ impl QWeatherClient {
 
     fn generate_jwt(&self) -> Result<String, QWeatherError> {
         let config = &self.config;
-        let kid = config.kid.as_ref().ok_or_else(|| QWeatherError::jwt_error("缺少 kid"))?;
-        let project_id = config.project_id.as_ref().ok_or_else(|| QWeatherError::jwt_error("缺少 project_id"))?;
-        let private_key = config.private_key.as_ref().ok_or_else(|| QWeatherError::jwt_error("缺少 private_key"))?;
+        let kid = config
+            .kid
+            .as_ref()
+            .ok_or_else(|| QWeatherError::jwt_error("缺少 kid"))?;
+        let project_id = config
+            .project_id
+            .as_ref()
+            .ok_or_else(|| QWeatherError::jwt_error("缺少 project_id"))?;
+        let private_key = config
+            .private_key
+            .as_ref()
+            .ok_or_else(|| QWeatherError::jwt_error("缺少 private_key"))?;
 
         let iat = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -76,12 +85,18 @@ impl QWeatherClient {
             let token = self.generate_jwt()?;
             req = req.header("Authorization", format!("Bearer {}", token));
         } else {
-            let key = self.config.api_key.as_ref().ok_or_else(|| QWeatherError::config_error("缺少 API KEY"))?;
+            let key = self
+                .config
+                .api_key
+                .as_ref()
+                .ok_or_else(|| QWeatherError::config_error("缺少 API KEY"))?;
             query.insert("key", key.clone());
         }
 
         let response = req.query(&query).send().await?;
-        response.error_for_status_ref().map_err(QWeatherError::HttpError)?;
+        response
+            .error_for_status_ref()
+            .map_err(QWeatherError::HttpError)?;
 
         let data: serde_json::Value = response.json().await?;
         if let Some(code) = data.get("code") {

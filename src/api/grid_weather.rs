@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use crate::client::QWeatherClient;
 use crate::error::QWeatherError;
-use crate::models::{
-    GridWeatherDailyResponse, GridWeatherHourlyResponse, GridWeatherNowResponse,
-};
+use crate::models::{GridWeatherDailyResponse, GridWeatherHourlyResponse, GridWeatherNowResponse};
 
 pub struct GridWeatherAPI<'a> {
     client: &'a QWeatherClient,
@@ -28,7 +26,9 @@ impl<'a> GridWeatherAPI<'a> {
             params.insert("unit", unit.to_string());
         }
         let url = format!("{}/grid-weather/now", self.client.config.base_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn daily_forecast(
@@ -51,7 +51,9 @@ impl<'a> GridWeatherAPI<'a> {
             params.insert("unit", unit.to_string());
         }
         let url = format!("{}/grid-weather/{}d", self.client.config.base_url, days);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 
     pub async fn hourly_forecast(
@@ -74,6 +76,8 @@ impl<'a> GridWeatherAPI<'a> {
             params.insert("unit", unit.to_string());
         }
         let url = format!("{}/grid-weather/{}h", self.client.config.base_url, hours);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 }

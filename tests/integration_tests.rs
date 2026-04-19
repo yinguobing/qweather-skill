@@ -72,7 +72,10 @@ async fn test_daily_forecast() {
     let config = test_config(&server.url());
     let client = QWeatherClient::new(config);
     let api = WeatherAPI::new(&client);
-    let resp = api.daily_forecast("101010100", 3, "zh", None).await.unwrap();
+    let resp = api
+        .daily_forecast("101010100", 3, "zh", None)
+        .await
+        .unwrap();
     assert_eq!(resp.code, "200");
     assert_eq!(resp.daily.len(), 1);
     assert_eq!(resp.daily[0].tempMax, "5");
@@ -93,7 +96,10 @@ async fn test_hourly_forecast() {
     let config = test_config(&server.url());
     let client = QWeatherClient::new(config);
     let api = WeatherAPI::new(&client);
-    let resp = api.hourly_forecast("101010100", 24, "zh", None).await.unwrap();
+    let resp = api
+        .hourly_forecast("101010100", 24, "zh", None)
+        .await
+        .unwrap();
     assert_eq!(resp.code, "200");
     assert_eq!(resp.hourly.len(), 1);
     assert_eq!(resp.hourly[0].temp, "4");
@@ -103,7 +109,8 @@ async fn test_hourly_forecast() {
 fn test_invalid_days() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
-        let config = Config::new(Some("k".to_string()), None, None, None, None, None, None).unwrap();
+        let config =
+            Config::new(Some("k".to_string()), None, None, None, None, None, None).unwrap();
         let client = QWeatherClient::new(config);
         let api = WeatherAPI::new(&client);
         let result = api.daily_forecast("101010100", 5, "zh", None).await;
@@ -117,7 +124,8 @@ fn test_invalid_days() {
 fn test_invalid_hours() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
-        let config = Config::new(Some("k".to_string()), None, None, None, None, None, None).unwrap();
+        let config =
+            Config::new(Some("k".to_string()), None, None, None, None, None, None).unwrap();
         let client = QWeatherClient::new(config);
         let api = WeatherAPI::new(&client);
         let result = api.hourly_forecast("101010100", 48, "zh", None).await;
@@ -184,7 +192,10 @@ async fn test_astronomy_sun() {
     let config = test_config(&server.url());
     let client = QWeatherClient::new(config);
     let api = AstronomyAPI::new(&client);
-    let resp = api.sunrise_sunset("101010100", "20241201", "zh").await.unwrap();
+    let resp = api
+        .sunrise_sunset("101010100", "20241201", "zh")
+        .await
+        .unwrap();
     assert_eq!(resp.code, "200");
     assert_eq!(resp.sunrise, "07:15");
 }
@@ -293,7 +304,8 @@ async fn test_api_error() {
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(r#"{"code":"401"}"#)
-        .create_async().await;
+        .create_async()
+        .await;
 
     let config = test_config(&server.url());
     let client = QWeatherClient::new(config);

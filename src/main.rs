@@ -71,7 +71,7 @@ async fn run() -> Result<()> {
     }
 
     let loc = &geo_resp.location[0];
-    let coord = format!("{},{}" , loc.lon, loc.lat);
+    let coord = format!("{},{}", loc.lon, loc.lat);
     println!(
         "城市: {} ({} {})  ID: {}  坐标: {}\n",
         loc.name, loc.adm1, loc.adm2, loc.id, coord
@@ -83,11 +83,15 @@ async fn run() -> Result<()> {
             print!("{}", format_now(&resp));
         }
         QueryType::Daily => {
-            let resp = weather.daily_forecast(&loc.id, args.days, "zh", None).await?;
+            let resp = weather
+                .daily_forecast(&loc.id, args.days, "zh", None)
+                .await?;
             print!("{}", format_daily(&resp));
         }
         QueryType::Hourly => {
-            let resp = weather.hourly_forecast(&loc.id, args.hours, "zh", None).await?;
+            let resp = weather
+                .hourly_forecast(&loc.id, args.hours, "zh", None)
+                .await?;
             print!("{}", format_hourly(&resp));
         }
         QueryType::Air => {
@@ -95,7 +99,9 @@ async fn run() -> Result<()> {
             print!("{}", format_air(&resp));
         }
         QueryType::Indices => {
-            let resp = indices_api.forecast(&loc.id, &args.index_days, "0", "zh").await?;
+            let resp = indices_api
+                .forecast(&loc.id, &args.index_days, "0", "zh")
+                .await?;
             print!("{}", format_indices(&resp));
         }
         QueryType::Minutely => {
@@ -108,7 +114,9 @@ async fn run() -> Result<()> {
         }
         QueryType::Sun => {
             if args.date.is_empty() {
-                return Err(anyhow::anyhow!("错误: 查询日出日落需要提供 --date yyyyMMdd"));
+                return Err(anyhow::anyhow!(
+                    "错误: 查询日出日落需要提供 --date yyyyMMdd"
+                ));
             }
             let resp = astro_api.sunrise_sunset(&loc.id, &args.date, "zh").await?;
             print!("{}", format_astronomy(&resp));
@@ -118,11 +126,15 @@ async fn run() -> Result<()> {
             print!("{}", format_grid_now(&resp));
         }
         QueryType::GridDaily => {
-            let resp = grid_api.daily_forecast(&coord, args.days, "zh", None).await?;
+            let resp = grid_api
+                .daily_forecast(&coord, args.days, "zh", None)
+                .await?;
             print!("{}", format_grid_daily(&resp));
         }
         QueryType::GridHourly => {
-            let resp = grid_api.hourly_forecast(&coord, args.hours, "zh", None).await?;
+            let resp = grid_api
+                .hourly_forecast(&coord, args.hours, "zh", None)
+                .await?;
             print!("{}", format_grid_hourly(&resp));
         }
         QueryType::AirDaily => {
@@ -141,8 +153,14 @@ async fn run() -> Result<()> {
             print!("{}", format_moon(&resp));
         }
         QueryType::Solar => {
-            if args.date.is_empty() || args.time.is_empty() || args.tz.is_empty() || args.alt.is_empty() {
-                return Err(anyhow::anyhow!("错误: 查询太阳高度角需要提供 --date --time --tz --alt"));
+            if args.date.is_empty()
+                || args.time.is_empty()
+                || args.tz.is_empty()
+                || args.alt.is_empty()
+            {
+                return Err(anyhow::anyhow!(
+                    "错误: 查询太阳高度角需要提供 --date --time --tz --alt"
+                ));
             }
             let resp = astro_api
                 .solar_elevation_angle(&coord, &args.date, &args.time, &args.tz, &args.alt, "zh")
@@ -153,5 +171,3 @@ async fn run() -> Result<()> {
 
     Ok(())
 }
-
-

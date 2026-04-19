@@ -22,6 +22,8 @@ impl<'a> MinutelyAPI<'a> {
         params.insert("location", location.to_string());
         params.insert("lang", lang.to_string());
         let url = format!("{}/minutely/5m", self.client.config.base_url);
-        self.client.request(reqwest::Method::GET, &url, Some(params)).await
+        self.client
+            .request(reqwest::Method::GET, &url, Some(params))
+            .await
     }
 }

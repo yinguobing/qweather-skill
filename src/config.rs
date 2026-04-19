@@ -57,9 +57,8 @@ impl Config {
         config.base_url = config.base_url.trim_end_matches('/').to_string();
         config.geo_url = config.geo_url.trim_end_matches('/').to_string();
 
-        let has_jwt = config.kid.is_some()
-            && config.project_id.is_some()
-            && config.private_key.is_some();
+        let has_jwt =
+            config.kid.is_some() && config.project_id.is_some() && config.private_key.is_some();
         let has_api_key = config.api_key.is_some();
 
         if !has_jwt && !has_api_key {
@@ -104,7 +103,16 @@ mod tests {
 
     #[test]
     fn test_config_from_param() {
-        let config = Config::new(Some("param-key".to_string()), None, None, None, None, None, None).unwrap();
+        let config = Config::new(
+            Some("param-key".to_string()),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
         assert_eq!(config.api_key, Some("param-key".to_string()));
         assert!(!config.use_jwt());
         assert_eq!(config.base_url, "https://devapi.qweather.com/v7");
@@ -171,7 +179,8 @@ mod tests {
 
     #[test]
     fn test_airquality_url() {
-        let config = Config::new(Some("k".to_string()), None, None, None, None, None, None).unwrap();
+        let config =
+            Config::new(Some("k".to_string()), None, None, None, None, None, None).unwrap();
         assert_eq!(config.airquality_url(), "https://devapi.qweather.com");
 
         let config2 = Config::new(
