@@ -58,8 +58,16 @@ impl Config {
         config.geo_url = config.geo_url.trim_end_matches('/').to_string();
 
         let has_jwt = config.kid.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
-            && config.project_id.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
-            && config.private_key.as_ref().map(|s| !s.is_empty()).unwrap_or(false);
+            && config
+                .project_id
+                .as_ref()
+                .map(|s| !s.is_empty())
+                .unwrap_or(false)
+            && config
+                .private_key
+                .as_ref()
+                .map(|s| !s.is_empty())
+                .unwrap_or(false);
         let has_api_key = config.api_key.is_some();
 
         if !has_jwt && !has_api_key {
@@ -82,8 +90,16 @@ impl Config {
 
     pub fn use_jwt(&self) -> bool {
         self.kid.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
-            && self.project_id.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
-            && self.private_key.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
+            && self
+                .project_id
+                .as_ref()
+                .map(|s| !s.is_empty())
+                .unwrap_or(false)
+            && self
+                .private_key
+                .as_ref()
+                .map(|s| !s.is_empty())
+                .unwrap_or(false)
     }
 
     pub fn airquality_url(&self) -> String {

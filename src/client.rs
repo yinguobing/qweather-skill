@@ -101,14 +101,8 @@ impl QWeatherClient {
             let body = response.text().await.unwrap_or_default();
             if let Ok(data) = serde_json::from_str::<serde_json::Value>(&body) {
                 if let Some(error) = data.get("error") {
-                    let detail = error
-                        .get("detail")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("");
-                    let title = error
-                        .get("title")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("");
+                    let detail = error.get("detail").and_then(|v| v.as_str()).unwrap_or("");
+                    let title = error.get("title").and_then(|v| v.as_str()).unwrap_or("");
                     let message = if !detail.is_empty() {
                         detail.to_string()
                     } else if !title.is_empty() {
