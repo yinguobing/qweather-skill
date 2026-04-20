@@ -50,7 +50,7 @@ main() {
     fi
     echo "    Version: $version"
 
-    asset="qweather-${version}-${target}.tar.gz"
+    asset="qw-${version}-${target}.tar.gz"
     url="https://github.com/$REPO/releases/download/$version/$asset"
 
     tmpdir=$(mktemp -d)
@@ -64,7 +64,7 @@ main() {
 
     echo "==> Installing to $INSTALL_DIR..."
     mkdir -p "$INSTALL_DIR"
-    mv "$tmpdir/qweather" "$INSTALL_DIR/qweather"
+    mv "$tmpdir/qw" "$INSTALL_DIR/qw"
 
     # Warn if install dir is not in PATH
     case ":$PATH:" in
@@ -80,7 +80,7 @@ main() {
     esac
 
     echo "==> Done. Installed:"
-    "$INSTALL_DIR/qweather" --version || true
+    "$INSTALL_DIR/qw" --version || true
 }
 
 main "$@"

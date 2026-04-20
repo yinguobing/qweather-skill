@@ -63,23 +63,23 @@ jobs:
         if: matrix.archive == 'tar.gz'
         run: |
           mkdir -p dist
-          cp target/${{ matrix.target }}/release/qweather dist/qweather
+          cp target/${{ matrix.target }}/release/qw dist/qw
           cp README.md LICENSE dist/
           cd dist
-          tar czf qweather-${{ github.ref_name }}-${{ matrix.target }}.tar.gz qweather README.md LICENSE
-          echo "ASSET=qweather-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" >> $GITHUB_ENV
+          tar czf qw-${{ github.ref_name }}-${{ matrix.target }}.tar.gz qw README.md LICENSE
+          echo "ASSET=qw-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" >> $GITHUB_ENV
 
       - name: Package (Windows)
         if: matrix.archive == 'zip'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist
-          Copy-Item target/${{ matrix.target }}/release/qweather.exe dist/qweather.exe
+          Copy-Item target/${{ matrix.target }}/release/qw.exe dist/qw.exe
           Copy-Item README.md dist/
           Copy-Item LICENSE dist/
           cd dist
-          Compress-Archive -Path qweather.exe,README.md,LICENSE -DestinationPath qweather-${{ github.ref_name }}-${{ matrix.target }}.zip
-          echo "ASSET=qweather-${{ github.ref_name }}-${{ matrix.target }}.zip" >> $env:GITHUB_ENV
+          Compress-Archive -Path qw.exe,README.md,LICENSE -DestinationPath qw-${{ github.ref_name }}-${{ matrix.target }}.zip
+          echo "ASSET=qw-${{ github.ref_name }}-${{ matrix.target }}.zip" >> $env:GITHUB_ENV
 
       - name: Calculate checksum (Unix)
         if: matrix.archive == 'tar.gz'
@@ -97,7 +97,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: qweather-${{ matrix.target }}
+          name: qw-${{ matrix.target }}
           path: dist/*
 
   release:
@@ -113,7 +113,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           path: artifacts
-          pattern: qweather-*
+          pattern: qw-*
           merge-multiple: true
 
       - name: List artifacts

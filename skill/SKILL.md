@@ -1,6 +1,6 @@
 ---
 name: qweather
-version: 0.3.0
+version: 0.4.0
 description: 查询全球城市实时天气、天气预报、空气质量等信息的技能。当用户询问某个城市的天气、气温、降雨、风向、空气质量时调用。
 homepage: https://github.com/yinguobing/qweather-skill
 required_env_vars:
@@ -10,7 +10,7 @@ required_env_vars:
   - QWEATHER_BASE_URL
   - QWEATHER_GEO_URL
 primary_credential: QWEATHER_PRIVATE_KEY
-metadata: {"openclaw":{"requires":{"env":["QWEATHER_KID","QWEATHER_PROJECT_ID","QWEATHER_PRIVATE_KEY","QWEATHER_BASE_URL","QWEATHER_GEO_URL"]},"primaryEnv":"QWEATHER_PRIVATE_KEY","homepage":"https://github.com/yinguobing/qweather-skill","install":[{"id":"qweather","kind":"cargo","package":"qweather","bins":["qweather"],"label":"Install qweather via cargo"}]}}
+metadata: {"openclaw":{"requires":{"env":["QWEATHER_KID","QWEATHER_PROJECT_ID","QWEATHER_PRIVATE_KEY","QWEATHER_BASE_URL","QWEATHER_GEO_URL"]},"primaryEnv":"QWEATHER_PRIVATE_KEY","homepage":"https://github.com/yinguobing/qweather-skill","install":[{"id":"qweather","kind":"cargo","package":"qweather","bins":["qw"],"label":"Install qweather via cargo"}]}}
 ---
 
 # 和风天气查询技能
@@ -28,6 +28,7 @@ curl -sSL https://raw.githubusercontent.com/yinguobing/qweather-skill/main/insta
 ```bash
 cargo install qweather
 ```
+安装后二进制名为 `qw`。
 
 
 源码安装
@@ -51,73 +52,94 @@ export QWEATHER_GEO_URL="https://your-host.qweatherapi.com/geo/v2"
 
 ## CLI 使用
 
-全局入口为 `qweather`。所有查询都会自动完成城市定位。
+全局入口为 `qw`。通过命令+子命令提供具体功能。
 
 ### 常用查询
 
 ```bash
-# 实时天气（默认）
-qweather 北京
+# 地理位置
+qw geo city-lookup 北京
+qw geo top-city --range cn
+qw geo poi-lookup 故宫 --type scenic
+qw geo poi-range 116.40,39.90 --type scenic --radius 10
+
+# 实时天气
+qw weather now --city 北京
 
 # 未来N天预报（daily 仅支持 3,7,10,15,30）
-qweather 北京 --type daily --days 3
+qw weather daily --city 北京
+qw weather daily 7 --city 北京
 
 # 逐小时预报（hourly 仅支持 24,72,168）
-qweather 北京 --type hourly --hours 24
-
-# 空气质量实时数据
-qweather 北京 --type air
-
-# 生活指数
-qweather 北京 --type indices --index-days 1d
-
-# 天气预警
-qweather 北京 --type warning
-
-# 分钟级降水（仅中国地区，自动获取经纬度）
-qweather 北京 --type minutely
-
-# 日出日落（--date 必选，格式 yyyyMMdd，最多未来 60 天）
-qweather 北京 --type sun --date 20260416
-
-# 月升月落和月相（--date 必选，格式 yyyyMMdd，最多未来 60 天）
-qweather 北京 --type moon --date 20260416
-
-# 太阳高度角（--date 必选；--time 格式 HHmm；--tz 时区偏移如 0800；-alt 海拔高度米）
-qweather 北京 --type solar --date 20260416 --time 1200 --tz 0800 --alt 43
+qw weather hourly --city 北京
+qw weather hourly 72 --city 北京
 
 # 格点天气（基于经纬度的高分辨率数据）
-qweather 北京 --type grid-now
-qweather 北京 --type grid-daily --days 3
-qweather 北京 --type grid-hourly --hours 24
+qw grid now --lon 116.40 --lat 39.90
+qw grid daily --lon 116.40 --lat 39.90
+qw grid daily 7 --lon 116.40 --lat 39.90
+qw grid hourly --lon 116.40 --lat 39.90
 
-# 空气质量预报
-qweather 北京 --type air-daily --days 5
-qweather 北京 --type air-hourly --hours 72
+# 分钟级降水（仅中国地区）
+qw precipitation --lon 116.40 --lat 39.90
+
+# 生活指数
+qw indices --city 北京
+qw indices --city 北京 --days 3d
+
+# 天气预警
+qw warning --city 北京
+
+# 空气质量
+qw air now --city 北京
+qw air daily --city 北京
+qw air daily 5 --city 北京
+qw air hourly --city 北京
+qw air station --city 北京
+
+# 日出日落（--date 必选，格式 yyyyMMdd，最多未来 60 天）
+qw sun --city 北京 --date 20260416
+
+# 月升月落和月相（--date 必选，格式 yyyyMMdd，最多未来 60 天）
+qw moon --city 北京 --date 20260416
+
+# 太阳高度角（--date 必选；--time 格式 HHmm；--tz 时区偏移如 0800；-alt 海拔高度米）
+qw solar --lon 116.40 --lat 39.90 --date 20260416 --time 1200 --tz 0800 --alt 43
 ```
+
+### 定位方式
+
+所有需要地理定位的命令支持以下三种方式（互斥，三选一）：
+- `--city <name>`：城市名称，自动调用 geo API 解析为 Location ID 和坐标
+- `--location-id <id>`：直接使用 Location ID
+- `--lon <float>` + `--lat <float>`：经纬度坐标（必须同时提供）
 
 ### 命令行参数速查
 
-- `--type {now,daily,hourly,air,indices,minutely,warning,sun,moon,solar,grid-now,grid-daily,grid-hourly,air-daily,air-hourly}`
-- `--days N`：用于 daily / grid-daily / air-daily
-- `--hours N`：用于 hourly / grid-hourly / air-hourly
-- `--index-days {1d,3d}`：用于 indices
-- `--date yyyyMMdd`：用于 sun / moon / solar（**最多未来 60 天，含今天**）
-- `--time HHmm` / `--tz 0800` / `--alt 海拔`：用于 solar
+**全局参数**（所有命令共享）：
 - `--kid` / `--project-id` / `--private-key` / `--base-url` / `--geo-url`：覆盖环境变量
+- `--lang`：语言（默认 `zh`）
+
+**各命令专属参数**：
+- `weather daily [DAYS]`：`3|7|10|15|30`（默认 3）
+- `weather hourly [HOURS]`：`24|72|168`（默认 24）
+- `grid daily [DAYS]`：`3|7`（默认 3）
+- `grid hourly [HOURS]`：`24|72`（默认 24）
+- `air hourly [HOURS]`：`24|72`（默认 24）
+- `air daily [DAYS]`：`1|3|5`（默认 3）
+- `indices --days <1d|3d>`（默认 `1d`）
+- `sun --date yyyyMMdd` / `moon --date yyyyMMdd`
+- `solar --date yyyyMMdd --time HHmm --tz 偏移 --alt 海拔`
 
 ### 参数限制
 
-| 参数 | 适用 `--type` | 限制说明 |
-|------|--------------|----------|
-| `--days` | `daily` | 仅支持 `3,7,10,15,30` |
-| `--days` | `grid-daily` | 仅支持 `3,7` |
-| `--days` | `air-daily` | 仅支持 `1,3,5` |
-| `--hours` | `hourly` | 仅支持 `24,72,168` |
-| `--hours` | `grid-hourly` | 仅支持 `24,72` |
-| `--hours` | `air-hourly` | 仅支持 `24,72` |
-| `--date` | `sun` / `moon` | 必选，格式 `yyyyMMdd`，**仅未来 60 天内（含今天）** |
-| `--date` | `solar` | 必选，格式 `yyyyMMdd` |
-| `--time` | `solar` | 必选，格式 `HHmm` |
-| `--tz` | `solar` | 必选，时区偏移，如 `0800`、`-0530` |
-| `--alt` | `solar` | 必选，海拔高度（米） |
+| 命令 | 参数 | 限制说明 |
+|------|------|---------|
+| `weather daily` | `[DAYS]` | 仅支持 `3,7,10,15,30` |
+| `weather hourly` | `[HOURS]` | 仅支持 `24,72,168` |
+| `grid daily` | `[DAYS]` | 仅支持 `3,7` |
+| `grid hourly` | `[HOURS]` | 仅支持 `24,72` |
+| `air daily` | `[DAYS]` | 仅支持 `1,3,5` |
+| `air hourly` | `[HOURS]` | 仅支持 `24,72` |
+| `sun` / `moon` | `--date` | 必选，格式 `yyyyMMdd`，**仅未来 60 天内（含今天）** |
+| `solar` | `--date` / `--time` / `--tz` / `--alt` | 全部必填 |

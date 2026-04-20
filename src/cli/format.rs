@@ -1,9 +1,9 @@
-use crate::api::air::{AirDailyResult, AirHourlyResult, AirNowResult};
+use crate::api::air::{AirDailyResult, AirHourlyResult, AirNowResult, AirStationResult};
 use crate::models::{
-    AstronomyMoonResponse, AstronomySunResponse, GridWeatherDailyResponse,
+    AstronomyMoonResponse, AstronomySunResponse, GeoResponse, GridWeatherDailyResponse,
     GridWeatherHourlyResponse, GridWeatherNowResponse, IndicesResponse, MinutelyResponse,
-    SolarElevationAngleResponse, WarningResponse, WeatherDailyResponse, WeatherHourlyResponse,
-    WeatherNowResponse,
+    POIResponse, SolarElevationAngleResponse, WarningResponse, WeatherDailyResponse,
+    WeatherHourlyResponse, WeatherNowResponse,
 };
 
 pub fn format_now(weather: &WeatherNowResponse) -> String {
@@ -362,4 +362,79 @@ pub fn format_grid_hourly(weather: &GridWeatherHourlyResponse) -> String {
         lines.push(format!("{}: {}, {}°C", time_str, hour.text, hour.temp));
     }
     lines.join("\n") + "\n"
+}
+
+pub fn format_geo_city_lookup(resp: &GeoResponse) -> String {
+    if resp.location.is_empty() {
+        return "未找到匹配的城市。\n".to_string();
+    }
+    let mut lines = vec!["城市搜索结果:".to_string()];
+    for loc in &resp.location {
+        lines.push(format!(
+            "  {} ({}, {})  ID: {}  坐标: {}, {}",
+            loc.name, loc.adm1, loc.adm2, loc.id, loc.lon, loc.lat
+        ));
+    }
+    lines.join("\n") + "\n"
+}
+
+pub fn format_geo_top_city(resp: &GeoResponse) -> String {
+    if resp.location.is_empty() {
+        return "暂无热门城市数据。\n".to_string();
+    }
+    let mut lines = vec!["热门城市:".to_string()];
+    for loc in &resp.location {
+        lines.push(format!(
+            "  {} ({}, {})  ID: {}  坐标: {}, {}",
+            loc.name, loc.adm1, loc.adm2, loc.id, loc.lon, loc.lat
+        ));
+    }
+    lines.join("\n") + "\n"
+}
+
+pub fn format_geo_poi(resp: &POIResponse) -> String {
+    if resp.poi.is_empty() {
+        return "未找到匹配的 POI。\n".to_string();
+    }
+    let mut lines = vec!["POI 搜索结果:".to_string()];
+    for poi in &resp.poi {
+        lines.push(format!(
+            "  {} ({}, {})  ID: {}  坐标: {}, {}",
+            poi.name, poi.adm1, poi.adm2, poi.id, poi.lon, poi.lat
+        ));
+    }
+    lines.join("\n") + "\n"
+}
+
+pub fn format_air_station(resp: &AirStationResult) -> String {
+    match resp {
+        AirStationResult::V7(a) => {
+            let s = &a.station;
+            let lines = vec![
+                format!("[{}] 监测站数据", a.updateTime),
+                format!("监测站: {} ({})  AQI: {} ({})", s.name, s.id, s.aqi, s.category),
+                format!("PM2.5: {}  PM10: {}", s.pm2p5, s.pm10),
+                format!("NO₂: {}  SO₂: {}", s.no2, s.so2),
+                format!("CO: {}  O₃: {}", s.co, s.o3),
+            ];
+            lines.join("\n") + "\n"
+        }
+        AirStationResult::V1(a) => {
+            let mut lines = vec!["[监测站数据]".to_string()];
+            for p in &a.pollutants {
+                let val = p
+                    .concentration
+                    .get("value")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                let unit = p
+                    .concentration
+                    .get("unit")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                lines.push(format!("  {}: {} {}", p.name, val, unit));
+            }
+            lines.join("\n") + "\n"
+        }
+    }
 }

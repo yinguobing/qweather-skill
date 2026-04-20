@@ -12,15 +12,3 @@ API文档：https://dev.qweather.com/docs/api/weather/weather-daily-forecast/
 ## 逐小时天气预报
 逐小时天气预报API，提供全球城市未来24-168小时逐小时天气预报，包括：温度、天气状况、风力、风速、风向、相对湿度、大气压强、降水概率、露点温度、云量。
 API文档：https://dev.qweather.com/docs/api/weather/weather-hourly-forecast/
-
-## 格点实时天气
-基于数值模式的天气预报数据，提供全球指定坐标的实时天气，分辨率3-5公里。
-API文档：https://dev.qweather.com/docs/api/weather/grid-weather-now/
-
-## 格点每日天气预报
-基于数值模式的天气预报数据，提供全球指定坐标的每日天气预报，分辨率3-5公里。
-API文档：https://dev.qweather.com/docs/api/weather/grid-weather-daily-forecast/
-
-## 格点逐小时天气预报
-基于数值模式的天气预报数据，提供全球指定坐标的逐小时天气预报，分辨率3-5公里。
-API文档：https://dev.qweather.com/docs/api/weather/grid-weather-hourly-forecast/
