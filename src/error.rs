@@ -49,6 +49,16 @@ impl QWeatherError {
         QWeatherError::ApiError { code, message }
     }
 
+    pub fn api_error_with_message(
+        code: impl Into<String>,
+        message: impl Into<String>,
+    ) -> Self {
+        QWeatherError::ApiError {
+            code: code.into(),
+            message: message.into(),
+        }
+    }
+
     pub fn config_error(msg: impl Into<String>) -> Self {
         QWeatherError::ConfigError(msg.into())
     }

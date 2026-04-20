@@ -8,9 +8,9 @@ use qweather::{Config, QWeatherClient};
 fn test_config(server_url: &str) -> Config {
     Config::new(
         Some("test-key".to_string()),
-        None,
-        None,
-        None,
+        Some(String::new()),
+        Some(String::new()),
+        Some(String::new()),
         None,
         Some(format!("{}/v7", server_url)),
         Some(format!("{}/v2", server_url)),
@@ -314,6 +314,28 @@ async fn test_api_error() {
     assert!(result.is_err());
     let err = result.unwrap_err().to_string();
     assert!(err.contains("401"));
+}
+
+#[tokio::test]
+async fn test_api_error_v2() {
+    let mut server = mockito::Server::new_async().await;
+    let _m = server
+        .mock("GET", "/v7/weather/now")
+        .match_query(mockito::Matcher::Any)
+        .with_status(400)
+        .with_header("content-type", "application/problem+json")
+        .with_body(r#"{"error":{"status":400,"type":"https://dev.qweather.com/docs/resource/error-code/#no-such-location","title":"No Such Location","detail":"没有查询到地点信息或不支持的位置"}}"#)
+        .create_async()
+        .await;
+
+    let config = test_config(&server.url());
+    let client = QWeatherClient::new(config);
+    let api = WeatherAPI::new(&client);
+    let result = api.now("unknown", "zh", None).await;
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("400"));
+    assert!(err.contains("没有查询到地点信息或不支持的位置"));
 }
 
 #[tokio::test]

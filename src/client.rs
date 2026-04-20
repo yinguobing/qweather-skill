@@ -94,10 +94,38 @@ impl QWeatherClient {
         }
 
         let response = req.query(&query).send().await?;
-        response
-            .error_for_status_ref()
-            .map_err(QWeatherError::HttpError)?;
+        let status = response.status();
 
+        // 处理 v2 错误码（非 2xx HTTP status）
+        if !status.is_success() {
+            let body = response.text().await.unwrap_or_default();
+            if let Ok(data) = serde_json::from_str::<serde_json::Value>(&body) {
+                if let Some(error) = data.get("error") {
+                    let detail = error
+                        .get("detail")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    let title = error
+                        .get("title")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    let message = if !detail.is_empty() {
+                        detail.to_string()
+                    } else if !title.is_empty() {
+                        title.to_string()
+                    } else {
+                        format!("HTTP {}", status.as_u16())
+                    };
+                    return Err(QWeatherError::api_error_with_message(
+                        status.as_u16().to_string(),
+                        message,
+                    ));
+                }
+            }
+            return Err(QWeatherError::api_error(status.as_u16().to_string()));
+        }
+
+        // 处理 v1 错误码（HTTP 2xx，但 JSON code 非 "200"）
         let data: serde_json::Value = response.json().await?;
         if let Some(code) = data.get("code") {
             let code_str = code.as_str().unwrap_or("");

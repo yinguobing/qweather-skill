@@ -57,8 +57,9 @@ impl Config {
         config.base_url = config.base_url.trim_end_matches('/').to_string();
         config.geo_url = config.geo_url.trim_end_matches('/').to_string();
 
-        let has_jwt =
-            config.kid.is_some() && config.project_id.is_some() && config.private_key.is_some();
+        let has_jwt = config.kid.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
+            && config.project_id.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
+            && config.private_key.as_ref().map(|s| !s.is_empty()).unwrap_or(false);
         let has_api_key = config.api_key.is_some();
 
         if !has_jwt && !has_api_key {
@@ -80,7 +81,9 @@ impl Config {
     }
 
     pub fn use_jwt(&self) -> bool {
-        self.kid.is_some() && self.project_id.is_some() && self.private_key.is_some()
+        self.kid.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
+            && self.project_id.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
+            && self.private_key.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
     }
 
     pub fn airquality_url(&self) -> String {
@@ -105,12 +108,12 @@ mod tests {
     fn test_config_from_param() {
         let config = Config::new(
             Some("param-key".to_string()),
+            Some(String::new()),
+            Some(String::new()),
+            Some(String::new()),
             None,
-            None,
-            None,
-            None,
-            None,
-            None,
+            Some("https://devapi.qweather.com/v7".to_string()),
+            Some("https://geoapi.qweather.com/v2".to_string()),
         )
         .unwrap();
         assert_eq!(config.api_key, Some("param-key".to_string()));
@@ -123,9 +126,9 @@ mod tests {
     fn test_config_custom_urls() {
         let config = Config::new(
             Some("key".to_string()),
-            None,
-            None,
-            None,
+            Some(String::new()),
+            Some(String::new()),
+            Some(String::new()),
             None,
             Some("https://api.qweather.com/v7/".to_string()),
             Some("https://geoapi.qweather.com/v2/".to_string()),
@@ -162,8 +165,8 @@ mod tests {
             Some("TEST_PROJECT".to_string()),
             Some(pem.to_string()),
             None,
-            None,
-            None,
+            Some("https://devapi.qweather.com/v7".to_string()),
+            Some("https://geoapi.qweather.com/v2".to_string()),
         );
         assert!(result.is_err());
         let err = result.unwrap_err().to_string();
@@ -172,22 +175,37 @@ mod tests {
 
     #[test]
     fn test_config_missing_key() {
-        // temporarily clear env vars (best effort)
-        let result = Config::new(None, None, None, None, None, None, None);
+        let result = Config::new(
+            None,
+            Some(String::new()),
+            Some(String::new()),
+            Some(String::new()),
+            None,
+            None,
+            None,
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn test_airquality_url() {
-        let config =
-            Config::new(Some("k".to_string()), None, None, None, None, None, None).unwrap();
+        let config = Config::new(
+            Some("k".to_string()),
+            Some(String::new()),
+            Some(String::new()),
+            Some(String::new()),
+            None,
+            Some("https://devapi.qweather.com/v7".to_string()),
+            Some("https://geoapi.qweather.com/v2".to_string()),
+        )
+        .unwrap();
         assert_eq!(config.airquality_url(), "https://devapi.qweather.com");
 
         let config2 = Config::new(
             Some("k".to_string()),
-            None,
-            None,
-            None,
+            Some(String::new()),
+            Some(String::new()),
+            Some(String::new()),
             None,
             Some("https://custom.qweatherapi.com/v7".to_string()),
             None,
