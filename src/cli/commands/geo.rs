@@ -10,9 +10,7 @@ pub async fn execute(client: &QWeatherClient, cmd: &GeoSubcommand, lang: &str) -
 
     match cmd {
         GeoSubcommand::CityLookup { keyword, number } => {
-            let resp = geo
-                .city_lookup(keyword, None, None, *number, lang)
-                .await?;
+            let resp = geo.city_lookup(keyword, None, None, *number, lang).await?;
             print!("{}", format_geo_city_lookup(&resp));
         }
         GeoSubcommand::TopCity { range, number } => {

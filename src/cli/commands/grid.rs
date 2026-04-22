@@ -16,12 +16,16 @@ pub async fn execute(client: &QWeatherClient, cmd: &GridSubcommand, lang: &str) 
         }
         GridSubcommand::Daily { days, location } => {
             let resolved = resolve_location(location, client).await?;
-            let resp = grid.daily_forecast(&resolved.coord, *days, lang, None).await?;
+            let resp = grid
+                .daily_forecast(&resolved.coord, *days, lang, None)
+                .await?;
             print!("{}", format_grid_daily(&resp));
         }
         GridSubcommand::Hourly { hours, location } => {
             let resolved = resolve_location(location, client).await?;
-            let resp = grid.hourly_forecast(&resolved.coord, *hours, lang, None).await?;
+            let resp = grid
+                .hourly_forecast(&resolved.coord, *hours, lang, None)
+                .await?;
             print!("{}", format_grid_hourly(&resp));
         }
     }
