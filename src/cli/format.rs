@@ -410,16 +410,14 @@ pub fn format_air_station(resp: &AirStationResult) -> String {
     match resp {
         AirStationResult::V7(a) => {
             let s = &a.station;
-            let lines = vec![
-                format!("[{}] 监测站数据", a.updateTime),
+            let lines = [format!("[{}] 监测站数据", a.updateTime),
                 format!(
                     "监测站: {} ({})  AQI: {} ({})",
                     s.name, s.id, s.aqi, s.category
                 ),
                 format!("PM2.5: {}  PM10: {}", s.pm2p5, s.pm10),
                 format!("NO₂: {}  SO₂: {}", s.no2, s.so2),
-                format!("CO: {}  O₃: {}", s.co, s.o3),
-            ];
+                format!("CO: {}  O₃: {}", s.co, s.o3)];
             lines.join("\n") + "\n"
         }
         AirStationResult::V1(a) => {
