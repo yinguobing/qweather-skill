@@ -1,5 +1,5 @@
 #!/bin/bash
-# pre-commit hook: 在提交前自动运行 cargo fmt
+# pre-commit hook: 在提交前强制运行 cargo fmt 和 cargo clippy 检查
 
 set -e
 
@@ -18,4 +18,17 @@ if ! cargo fmt -- --check 2>/dev/null; then
 fi
 
 echo "Code formatting OK."
+
+echo ""
+echo "Running cargo clippy..."
+
+# 运行 clippy 检查，如果有警告则阻止提交
+if ! cargo clippy -- -D warnings 2>&1; then
+    echo ""
+    echo "Clippy warnings found. Please fix the issues above before committing."
+    exit 1
+fi
+
+echo "Clippy check OK."
+
 exit 0
