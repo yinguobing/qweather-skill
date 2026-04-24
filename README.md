@@ -67,6 +67,7 @@ qw --kid YOUR_KID \
 ```bash
 # 地理位置
 qw geo city-lookup 北京
+qw geo reverse --lon 116.41 --lat 39.92
 qw geo top-city --range cn
 qw geo poi-lookup 故宫 --type scenic
 qw geo poi-range 116.40,39.90 --type scenic --radius 10

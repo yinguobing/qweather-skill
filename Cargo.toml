@@ -1,6 +1,6 @@
 [package]
 name = "qweather"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["yinguobing <yinguobing@gmail.com>"]
 description = "专门为龙虾（OpenClaw）开发的和风天气查询技能"

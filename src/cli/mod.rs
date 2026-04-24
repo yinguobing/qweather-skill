@@ -75,6 +75,15 @@ pub enum GeoSubcommand {
         #[arg(long, default_value_t = 10)]
         number: i32,
     },
+    #[command(about = "经纬度坐标反查城市")]
+    Reverse {
+        #[arg(long)]
+        lon: f64,
+        #[arg(long)]
+        lat: f64,
+        #[arg(long, default_value_t = 10)]
+        number: i32,
+    },
     #[command(about = "热门城市")]
     TopCity {
         #[arg(long, default_value = "cn")]

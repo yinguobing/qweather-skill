@@ -13,6 +13,10 @@
 城市搜索API提供全球地理位位置、全球城市搜索服务，支持经纬度坐标反查、多语言、模糊搜索等功能。
 API文档：https://dev.qweather.com/docs/api/geoapi/city-lookup/
 
+### 经纬度坐标反查
+通过经纬度坐标反查所在城市信息。
+命令：`qw geo reverse --lon <LON> --lat <LAT>`
+
 ## 热门城市查询
 获取全球各国热门城市列表。
 API文档：https://dev.qweather.com/docs/api/geoapi/top-city/
