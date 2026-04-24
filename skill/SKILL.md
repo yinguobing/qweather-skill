@@ -1,6 +1,6 @@
 ---
 name: qweather
-version: 0.4.0
+version: 0.5.0
 description: 查询全球城市或者经纬度位置的实时天气、天气预报、空气质量等信息的技能。当用户询问某个城市或者经纬度的天气、气温、降雨、风向、空气质量时调用。
 homepage: https://github.com/yinguobing/qweather-skill
 required_env_vars:
