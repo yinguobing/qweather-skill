@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>qw — 和风天气命令行工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===== Reset & Variables ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky-top: #1a1a2e;
+    --sky-mid: #2d3561;
+    --sky-low: #4a6fa5;
+    --sky-horizon: #7eb8da;
+    --sunlight: #f4a261;
+    --sunlight-warm: #e76f51;
+    --cloud: rgba(255, 255, 255, 0.12);
+    --cloud-bright: rgba(255, 255, 255, 0.22);
+    --text-primary: #e8edf2;
+    --text-secondary: #a8b8c8;
+    --text-muted: #6b7d8e;
+    --surface: rgba(20, 24, 48, 0.65);
+    --surface-hover: rgba(28, 33, 58, 0.8);
+    --surface-code: rgba(12, 15, 28, 0.85);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-glow: rgba(126, 184, 218, 0.25);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --font-display: 'Noto Serif SC', serif;
+    --font-body: 'Noto Sans SC', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--sky-top);
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== Sky Background ===== */
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: linear-gradient(
+      180deg,
+      #0d1025 0%,
+      #1a1f40 15%,
+      #253060 30%,
+      #2d3f72 45%,
+      #3e5a8a 60%,
+      #5579a0 75%,
+      #7ea3b8 90%,
+      #a8c8d8 100%
+    );
+  }
+
+  .sky::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 30%, rgba(244, 162, 97, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 70% 50%, rgba(231, 111, 81, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse 90% 30% at 50% 85%, rgba(126, 184, 218, 0.15) 0%, transparent 50%);
+  }
+
+  /* Cloud layers */
+  .clouds {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .cloud {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--cloud);
+    filter: blur(60px);
+    animation: drift linear infinite;
+  }
+
+  .cloud:nth-child(1) { width: 500px; height: 180px; top: 8%; left: -10%; animation-duration: 38s; }
+  .cloud:nth-child(2) { width: 400px; height: 140px; top: 18%; left: 55%; animation-duration: 42s; animation-delay: -12s; }
+  .cloud:nth-child(3) { width: 350px; height: 120px; top: 28%; left: 25%; animation-duration: 35s; animation-delay: -8s; background: var(--cloud-bright); }
+  .cloud:nth-child(4) { width: 600px; height: 200px; top: 38%; left: 40%; animation-duration: 48s; animation-delay: -20s; }
+  .cloud:nth-child(5) { width: 450px; height: 160px; top: 50%; left: -5%; animation-duration: 40s; animation-delay: -15s; }
+  .cloud:nth-child(6) { width: 380px; height: 130px; top: 58%; left: 60%; animation-duration: 44s; animation-delay: -25s; background: var(--cloud-bright); }
+  .cloud:nth-child(7) { width: 520px; height: 170px; top: 65%; left: 20%; animation-duration: 36s; animation-delay: -5s; }
+
+  @keyframes drift {
+    from { transform: translateX(-20vw); }
+    to { transform: translateX(110vw); }
+  }
+
+  /* Noise texture overlay */
+  .noise {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Dot grid pattern */
+  .dot-grid {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* ===== Layout ===== */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  /* ===== Navigation ===== */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 16px 0;
+    transition: background 0.4s, backdrop-filter 0.4s, box-shadow 0.4s;
+  }
+
+  .nav.scrolled {
+    background: rgba(13, 16, 37, 0.75);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    box-shadow: 0 1px 0 var(--border-subtle);
+  }
+
+  .nav-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-brand {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-brand-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--sunlight), var(--sunlight-warm));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 400;
+    transition: color 0.25s;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-links a:hover { color: var(--text-primary); }
+
+  .nav-cta {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border-glow);
+    color: var(--text-primary);
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .nav-cta:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(126, 184, 218, 0.5);
+  }
+
+  /* ===== Hero ===== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 0 80px;
+  }
+
+  .hero-content {
+    max-width: 720px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-family: var(--font-mono);
+  }
+
+  .hero-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #6fcf97;
+    box-shadow: 0 0 8px rgba(111, 207, 151, 0.5);
+    animation: pulse-dot 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 6.5vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: 0.03em;
+    margin-bottom: 24px;
+    color: #ffffff;
+  }
+
+  .hero-title .accent {
+    background: linear-gradient(135deg, var(--sunlight), var(--sunlight-warm));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 40px;
+    max-width: 560px;
+    font-weight: 300;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 24px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    font-family: var(--font-body);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--sunlight), var(--sunlight-warm));
+    color: #1a1a2e;
+    box-shadow: 0 4px 20px rgba(244, 162, 97, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(244, 162, 97, 0.4);
+  }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-primary);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  /* Install command snippet */
+  .install-snippet {
+    background: var(--surface-code);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .install-snippet .prompt {
+    color: #6fcf97;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    user-select: none;
+  }
+
+  .install-snippet code {
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    color: #cdd6f4;
+    white-space: nowrap;
+  }
+
+  .install-snippet .copy-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.25s;
+    font-family: var(--font-body);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .install-snippet .copy-btn:hover {
+    background: rgba(255,255,255,0.12);
+    color: var(--text-primary);
+  }
+
+  .install-snippet .copy-btn.copied {
+    background: rgba(111, 207, 151, 0.15);
+    border-color: rgba(111, 207, 151, 0.3);
+    color: #6fcf97;
+  }
+
+  /* ===== Sections ===== */
+  .section { padding: 100px 0; }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--sunlight);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 20px;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+  }
+
+  .section-desc {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    max-width: 540px;
+    line-height: 1.8;
+    margin-bottom: 56px;
+    font-weight: 300;
+  }
+
+  /* ===== Feature Cards ===== */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 32px 30px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: all 0.35s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(126, 184, 218, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .feature-icon svg {
+    width: 22px;
+    height: 22px;
+    stroke: var(--sunlight);
+    fill: none;
+    stroke-width: 1.8;
+  }
+
+  .feature-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+  }
+
+  .feature-card p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ===== CLI Showcase ===== */
+  .cli-showcase {
+    background: var(--surface-code);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .cli-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .cli-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+  }
+
+  .cli-dot:nth-child(1) { background: #ff5f57; }
+  .cli-dot:nth-child(2) { background: #febc2e; }
+  .cli-dot:nth-child(3) { background: #28c840; }
+
+  .cli-title {
+    margin-left: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .cli-body {
+    padding: 24px 22px;
+    overflow-x: auto;
+  }
+
+  .cli-body pre {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.9;
+    color: #cdd6f4;
+    margin: 0;
+  }
+
+  .cli-body .comment { color: #5c6a7a; }
+  .cli-body .cmd { color: #89b4fa; }
+  .cli-body .arg { color: #a6e3a1; }
+  .cli-body .flag { color: #fab387; }
+  .cli-body .val { color: #f9e2af; }
+
+  .cli-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .cli-tab {
+    padding: 12px 22px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: all 0.25s;
+    border-bottom: 2px solid transparent;
+  }
+
+  .cli-tab:hover { color: var(--text-secondary); }
+  .cli-tab.active {
+    color: var(--sunlight);
+    border-bottom-color: var(--sunlight);
+  }
+
+  .cli-panel { display: none; }
+  .cli-panel.active { display: block; }
+
+  /* ===== Install Section ===== */
+  .install-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .install-card {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .install-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #ffffff;
+  }
+
+  .install-card pre {
+    background: var(--surface-code);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    color: #cdd6f4;
+    overflow-x: auto;
+  }
+
+  /* ===== Auth Config ===== */
+  .config-section {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 36px 32px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    margin-top: 40px;
+  }
+
+  .config-section h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #ffffff;
+  }
+
+  .config-section > p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+
+  .config-section pre {
+    background: var(--surface-code);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.9;
+    color: #cdd6f4;
+    overflow-x: auto;
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: 48px 0;
+    margin-top: 40px;
+  }
+
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .footer-text {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+  }
+
+  .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    transition: color 0.25s;
+  }
+
+  .footer-links a:hover { color: var(--text-secondary); }
+
+  /* ===== Scroll Reveal ===== */
+  .reveal {
+    opacity: 0;
+    transform: translateY(36px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-stagger > * { opacity: 0; transform: translateY(36px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal-stagger > *.visible { opacity: 1; transform: translateY(0); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 768px) {
+    .hero { padding: 100px 0 60px; min-height: auto; }
+    .hero-title { font-size: 2.5rem; }
+    .section { padding: 60px 0; }
+    .features-grid { grid-template-columns: 1fr; }
+    .install-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .install-snippet { flex-wrap: wrap; }
+    .install-snippet code { font-size: 0.75rem; }
+  }
+
+  @media (max-width: 480px) {
+    .container { padding: 0 18px; }
+    .hero-title { font-size: 2rem; }
+    .hero-actions { flex-direction: column; }
+    .btn { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sky Background -->
+<div class="sky"></div>
+<div class="clouds">
+  <div class="cloud"></div><div class="cloud"></div><div class="cloud"></div>
+  <div class="cloud"></div><div class="cloud"></div><div class="cloud"></div>
+  <div class="cloud"></div>
+</div>
+<div class="noise"></div>
+<div class="dot-grid"></div>
+
+<!-- Navigation -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">
+      <span class="nav-brand-icon">qw</span>
+      <span>qweather</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">功能</a></li>
+      <li><a href="#cli">命令行</a></li>
+      <li><a href="#install">安装</a></li>
+    </ul>
+    <a href="#install" class="nav-cta">快速开始</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-badge reveal">
+        <span class="hero-badge-dot"></span>
+        v0.5.0 &middot; MIT License
+      </div>
+      <h1 class="hero-title reveal">
+        查询天气<br>只需<span class="accent">一行命令</span>
+      </h1>
+      <p class="hero-subtitle reveal">
+        基于和风天气 API 的高性能命令行天气工具。支持实时天气、分钟级降水、
+        空气质量、生活指数、天文数据等丰富的气象信息查询，
+        专为终端工作流打造。
+      </p>
+      <div class="hero-actions reveal">
+        <a href="#install" class="btn btn-primary">快速安装</a>
+        <a href="#cli" class="btn btn-secondary">查看命令</a>
+      </div>
+      <div class="install-snippet reveal">
+        <span class="prompt">$</span>
+        <code>curl -sSL https://raw.githubusercontent.com/yinguobing/qweather-skill/main/install.sh | bash</code>
+        <button class="copy-btn" id="heroCopyBtn" onclick="copyInstall(this)">复制</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-label reveal">功能特性</div>
+    <h2 class="section-title reveal">覆盖全面的气象数据查询</h2>
+    <p class="section-desc reveal">
+      从实时天气到未来预报，从空气质量到天文数据，
+      一个二进制文件搞定所有天气查询需求。
+    </p>
+    <div class="features-grid reveal-stagger">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </div>
+        <h3>实时天气</h3>
+        <p>温度、体感温度、风力风向、相对湿度、能见度、云量、气压等实时气象要素，支持全球城市查询。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2z"/><line x1="12" y1="10" x2="12" y2="17"/><circle cx="12" cy="20" r="1"/></svg>
+        </div>
+        <h3>天气预警</h3>
+        <p>台风、暴雨、暴雪、高温、寒潮、大雾等各类实时预警信息，覆盖中国全境，确保安全提前知晓。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <h3>分钟级降水</h3>
+        <p>未来 2 小时内每 5 分钟的降水强度预报，精确到分钟级别，支持中国地区高精度降水预测。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><circle cx="20" cy="4" r="3"/><path d="M8 14c-3.3 0-6-2.7-6-6"/><path d="M20 7c0 1.7-1.3 3-3 3"/></svg>
+        </div>
+        <h3>空气质量</h3>
+        <p>实时 AQI 指数、主要污染物浓度（PM2.5/PM10/O3/NO2/SO2/CO）、未来逐日和逐小时空气质量预报。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 1l1.5 4.5L23 7l-4.5 1.5L17 13l-1.5-4.5L11 7l4.5-1.5L17 1z"/><path d="M3 8l1.5 4.5L9 14l-4.5 1.5L3 20l-1.5-4.5L-3 14l4.5-1.5L3 8z"/></svg>
+        </div>
+        <h3>生活指数</h3>
+        <p>穿衣、洗车、运动、感冒、紫外线、钓鱼、旅游等 16 项生活指数预报，为日常生活提供参考。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v1M12 20v1M3 12h1M20 12h1"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h3>格点天气</h3>
+        <p>基于经纬度坐标的高分辨率天气数据，空间精度可达 3-5 公里，支持逐日和逐小时精确预报。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2a4 4 0 014 4c0 3-4 8-4 8s-4-5-4-8a4 4 0 014-4z"/><circle cx="12" cy="6" r="2"/></svg>
+        </div>
+        <h3>城市定位</h3>
+        <p>支持城市名称搜索、POI 兴趣点查询、热门城市排行、经纬度反向地理编码，精准定位查询目标。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="4"/><path d="M12 9v3M7 22c0-3.3 2.2-6 5-6s5 2.7 5 6"/><circle cx="8" cy="5" r="2"/></svg>
+        </div>
+        <h3>天文数据</h3>
+        <p>日出日落时间、月升月落时间、月相变化、太阳高度角和方位角等天文数据，满足特殊场景需求。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLI Showcase -->
+<section class="section" id="cli">
+  <div class="container">
+    <div class="section-label reveal">命令行</div>
+    <h2 class="section-title reveal">直观的 CLI 设计</h2>
+    <p class="section-desc reveal">
+      通过命令和子命令的组合，轻松查询各类天气数据。
+      支持城市名称、Location ID 和经纬度三种定位方式。
+    </p>
+
+    <div class="cli-showcase reveal">
+      <div class="cli-tabs" id="cliTabs">
+        <button class="cli-tab active" data-panel="panel-weather">天气查询</button>
+        <button class="cli-tab" data-panel="panel-grid">格点天气</button>
+        <button class="cli-tab" data-panel="panel-air">空气质量</button>
+        <button class="cli-tab" data-panel="panel-lifestyle">生活指数</button>
+        <button class="cli-tab" data-panel="panel-astro">天文数据</button>
+      </div>
+      <div class="cli-header">
+        <span class="cli-dot"></span><span class="cli-dot"></span><span class="cli-dot"></span>
+        <span class="cli-title">终端</span>
+      </div>
+      <div class="cli-body">
+        <div class="cli-panel active" id="panel-weather"><pre><span class="comment"># 实时天气</span>
+<span class="cmd">qw</span> <span class="arg">weather now</span> --city <span class="val">北京</span>
+
+<span class="comment"># 未来 7 天预报（支持 3/7/10/15/30 天）</span>
+<span class="cmd">qw</span> <span class="arg">weather daily</span> <span class="val">7</span> --city <span class="val">上海</span>
+
+<span class="comment"># 未来 24 小时逐时预报（支持 24/72/168 小时）</span>
+<span class="cmd">qw</span> <span class="arg">weather hourly</span> <span class="val">72</span> --city <span class="val">深圳</span>
+
+<span class="comment"># 分钟级降水预报（中国地区）</span>
+<span class="cmd">qw</span> <span class="arg">precipitation</span> --lon <span class="val">116.40</span> --lat <span class="val">39.90</span></pre></div>
+
+        <div class="cli-panel" id="panel-grid"><pre><span class="comment"># 格点实时天气（高精度 3-5km）</span>
+<span class="cmd">qw</span> <span class="arg">grid now</span> --lon <span class="val">116.40</span> --lat <span class="val">39.90</span>
+
+<span class="comment"># 格点逐日预报（支持 3/7 天）</span>
+<span class="cmd">qw</span> <span class="arg">grid daily</span> <span class="val">7</span> --lon <span class="val">121.47</span> --lat <span class="val">31.23</span>
+
+<span class="comment"># 格点逐时预报（支持 24/72 小时）</span>
+<span class="cmd">qw</span> <span class="arg">grid hourly</span> <span class="val">72</span> --lon <span class="val">114.06</span> --lat <span class="val">22.55</span></pre></div>
+
+        <div class="cli-panel" id="panel-air"><pre><span class="comment"># 实时空气质量</span>
+<span class="cmd">qw</span> <span class="arg">air now</span> --city <span class="val">北京</span>
+
+<span class="comment"># 未来 5 天空气质量预报</span>
+<span class="cmd">qw</span> <span class="arg">air daily</span> <span class="val">5</span> --city <span class="val">上海</span>
+
+<span class="comment"># 监测站数据</span>
+<span class="cmd">qw</span> <span class="arg">air station</span> --city <span class="val">广州</span></pre></div>
+
+        <div class="cli-panel" id="panel-lifestyle"><pre><span class="comment"># 今日生活指数</span>
+<span class="cmd">qw</span> <span class="arg">indices</span> --city <span class="val">北京</span>
+
+<span class="comment"># 未来 3 天生活指数</span>
+<span class="cmd">qw</span> <span class="arg">indices</span> --city <span class="val">杭州</span> --days <span class="val">3d</span>
+
+<span class="comment"># 类型包括：穿衣、洗车、运动、感冒、紫外线、</span>
+<span class="comment"># 钓鱼、旅游、过敏、晾晒等 16 项指数</span></pre></div>
+
+        <div class="cli-panel" id="panel-astro"><pre><span class="comment"># 日出日落（日期格式 yyyyMMdd，最多未来 60 天）</span>
+<span class="cmd">qw</span> <span class="arg">sun</span> --city <span class="val">北京</span> --date <span class="val">20260615</span>
+
+<span class="comment"># 月升月落与月相</span>
+<span class="cmd">qw</span> <span class="arg">moon</span> --city <span class="val">上海</span> --date <span class="val">20260615</span>
+
+<span class="comment"># 太阳高度角</span>
+<span class="cmd">qw</span> <span class="arg">solar</span> --lon <span class="val">116.40</span> --lat <span class="val">39.90</span> \
+  --date <span class="val">20260615</span> --time <span class="val">1200</span> --tz <span class="val">0800</span> --alt <span class="val">43</span></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Install Section -->
+<section class="section" id="install">
+  <div class="container">
+    <div class="section-label reveal">安装指南</div>
+    <h2 class="section-title reveal">三种安装方式</h2>
+    <p class="section-desc reveal">
+      无论你是终端新手还是资深开发者，都能找到适合自己的安装方式。
+    </p>
+
+    <div class="install-grid reveal-stagger">
+      <div class="install-card">
+        <h3>Shell 脚本安装</h3>
+        <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:14px;">推荐方式，一行命令完成安装</p>
+        <pre>curl -sSL https://raw.githubusercontent.com/yinguobing/qweather-skill/main/install.sh | bash</pre>
+      </div>
+      <div class="install-card">
+        <h3>Cargo 安装</h3>
+        <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:14px;">从 crates.io 安装发布版本</p>
+        <pre>cargo install qweather</pre>
+      </div>
+      <div class="install-card">
+        <h3>源码编译</h3>
+        <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:14px;">从 GitHub 仓库直接编译</p>
+        <pre>cargo install --git https://github.com/yinguobing/qweather-skill.git</pre>
+      </div>
+    </div>
+
+    <!-- Auth Config -->
+    <div class="config-section reveal">
+      <h3>身份认证配置</h3>
+      <p>使用 JWT 认证方式，支持环境变量和命令行参数两种配置方式。请在<a href="https://console.qweather.com/project" style="color:var(--sunlight);">和风天气控制台</a>获取凭证。</p>
+      <pre>export QWEATHER_KID="YOUR_KID"
+export QWEATHER_PROJECT_ID="YOUR_PROJECT_ID"
+export QWEATHER_PRIVATE_KEY="/path/to/private.pem"
+export QWEATHER_BASE_URL="https://your-host.qweatherapi.com/v7"
+export QWEATHER_GEO_URL="https://your-host.qweatherapi.com/geo/v2"</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="footer-text">qw &mdash; 和风天气命令行工具</span>
+    <ul class="footer-links">
+      <li><a href="https://github.com/yinguobing/qweather-skill">GitHub</a></li>
+      <li><a href="https://dev.qweather.com/">和风天气 API</a></li>
+      <li><a href="https://console.qweather.com/project">控制台</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // CLI tabs
+  document.getElementById('cliTabs').addEventListener('click', (e) => {
+    if (!e.target.classList.contains('cli-tab')) return;
+    const panelId = e.target.dataset.panel;
+
+    document.querySelectorAll('.cli-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.cli-panel').forEach(p => p.classList.remove('active'));
+
+    e.target.classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+  });
+
+  // Copy install command
+  function copyInstall(btn) {
+    const code = btn.parentElement.querySelector('code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = '已复制';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '复制';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Staggered reveal for grids
+  document.querySelectorAll('.reveal-stagger').forEach(container => {
+    const childObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 80);
+          childObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+    container.querySelectorAll(':scope > *').forEach(child => childObserver.observe(child));
+  });
+</script>
+</body>
+</html>
